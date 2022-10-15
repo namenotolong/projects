@@ -4,6 +4,7 @@ import Database from '@/view/Database'
 
 
 
+
 Vue.use(Router)
 
 export default new Router({
@@ -18,3 +19,4 @@ export default new Router({
     }
   ]
 })
+    
