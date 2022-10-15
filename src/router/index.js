@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import hello from '@/view/hello'
+import Database from '@/view/Database'
+
 
 
 Vue.use(Router)
@@ -9,8 +10,8 @@ export default new Router({
   routes: [
     {
       path: '/',
-      name: 'hello',
-      component: hello,
+      name: 'database',
+      component: Database,
       meta: {
         requiredAuth: false
       }
