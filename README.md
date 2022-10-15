@@ -1,7 +1,3 @@
-# huyong-boke-front
-
-> 博客平台前端
-
 ## Build Setup
 
 ``` bash
