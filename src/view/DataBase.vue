@@ -24,8 +24,7 @@
                     </el-menu>
                 </el-aside>
                 <el-aside width="300px">
-                    <el-tree v-if="curDbTables.length > 0" 
-                        @node-click="dbNodeClick" :props="props" :data="curDbTables">
+                    <el-tree v-if="curDbTables.length > 0" @node-click="dbNodeClick" :props="props" :data="curDbTables">
                     </el-tree>
                 </el-aside>
                 <el-container v-if="editableTabs.length > 0">
@@ -60,8 +59,8 @@
                     <el-form-item label="连接名称" prop="name">
                         <el-input v-model="ruleForm.name"></el-input>
                     </el-form-item>
-                    <el-form-item label="连接类型" prop="type">
-                        <el-select v-model="ruleForm.type" placeholder="请选择连接类型">
+                    <el-form-item label="连接类型" prop="dbType">
+                        <el-select v-model="ruleForm.dbType" placeholder="请选择连接类型">
                             <el-option v-for="item in supportTypes" :key="item" :label="item" :value="item">
                             </el-option>
                         </el-select>
@@ -69,8 +68,8 @@
                     <el-form-item label="主机" prop="host">
                         <el-input v-model="ruleForm.host"></el-input>
                     </el-form-item>
-                    <el-form-item label="用户" prop="user">
-                        <el-input v-model="ruleForm.user"></el-input>
+                    <el-form-item label="用户" prop="loginUser">
+                        <el-input v-model="ruleForm.loginUser"></el-input>
                     </el-form-item>
                     <el-form-item label="密码" prop="password">
                         <el-input v-model="ruleForm.password" type="password"></el-input>
@@ -90,8 +89,8 @@
                     <el-form-item label="连接名称" prop="name">
                         <el-input v-model="editConnForm.name"></el-input>
                     </el-form-item>
-                    <el-form-item label="连接类型" prop="type">
-                        <el-select v-model="editConnForm.type" placeholder="请选择连接类型">
+                    <el-form-item label="连接类型" prop="dbType">
+                        <el-select v-model="editConnForm.dbType" placeholder="请选择连接类型">
                             <el-option v-for="item in supportTypes" :key="item" :label="item" :value="item">
                             </el-option>
                         </el-select>
@@ -99,8 +98,8 @@
                     <el-form-item label="主机" prop="host">
                         <el-input v-model="editConnForm.host"></el-input>
                     </el-form-item>
-                    <el-form-item label="用户" prop="user">
-                        <el-input v-model="editConnForm.user"></el-input>
+                    <el-form-item label="用户" prop="loginUser">
+                        <el-input v-model="editConnForm.loginUser"></el-input>
                     </el-form-item>
                     <el-form-item label="密码" prop="password">
                         <el-input v-model="editConnForm.password" type="password"></el-input>
@@ -207,12 +206,12 @@ export default {
             //添加连接表单
             addConnDialog: false,
             editConnDialog: false,
-            supportTypes: ['mysql', 'oracle'],
+            supportTypes: ['MYSQL', 'ORACLE'],
             ruleForm: {
                 name: '',
-                type: '',
+                dbType: '',
                 host: '',
-                user: '',
+                loginUser: '',
                 password: ''
             },
             editConnForm: {},
@@ -221,13 +220,13 @@ export default {
                     { required: true, message: '请输入连接名称', trigger: 'blur' },
                     { min: 3, max: 10, message: '长度在 3 到 10 个字符', trigger: 'blur' }
                 ],
-                type: [
+                dbType: [
                     { required: true, message: '请选择连接类型', trigger: 'change' }
                 ],
                 host: [
                     { required: true, message: '请填写主机地址', trigger: 'blur' }
                 ],
-                user: [
+                loginUser: [
                     { required: true, message: '请填写用户名', trigger: 'blur' }
                 ],
                 password: [
@@ -257,9 +256,9 @@ export default {
         //运行sql
         async executeSql(sql, connId, database) {
             const params = {
-                sql : sql,
-                connId : connId,
-                database : database
+                sql: sql,
+                connId: connId,
+                database: database
             }
             const result = await runSql(params);
             return result;
@@ -283,15 +282,20 @@ export default {
                 background: 'rgba(0, 0, 0, 0.7)'
             });
             const res = await deleteConn(id)
+            this.queryConns()
             loading.close();
         },
         //编辑连接
         async editUpdateConn(data) {
             const rest = await updateConn(data)
+            this.queryConns()
+            this.editConnDialog = false
         },
         //新建连接
         async saveConn(data) {
             const rest = await saveConn(data)
+            this.queryConns()
+            this.addConnDialog = false
         },
         //new
         async refreshDb(id) {
@@ -302,7 +306,7 @@ export default {
                 spinner: 'el-icon-loading',
                 background: 'rgba(0, 0, 0, 0.7)'
             });
-            
+
             const rest = await this.listDbs(id)
 
             this.curDbTables = rest
@@ -347,7 +351,7 @@ export default {
         },
         //节点点击
         dbNodeClick(obj) {
-            if (obj.leaf === 'true') {
+            if (obj.leaf === true) {
                 //输入select预览
                 let sqlContent = `select * from ${obj.name} limit 10`;
 
@@ -404,7 +408,6 @@ export default {
             this.$refs[formName].validate((valid) => {
                 if (valid) {
                     this.saveConn(this.ruleForm)
-                    this.queryConns()
                 }
             });
         },
@@ -425,7 +428,6 @@ export default {
                 this.editConnDialog = true;
             } else if (op === 'remove') {
                 this.deletConn(data.id)
-                this.queryConns()
             }
 
             this.isShowMenu = false
@@ -434,7 +436,6 @@ export default {
             this.$refs[formName].validate((valid) => {
                 if (valid) {
                     this.editUpdateConn(this.editConnForm)
-                    this.queryConns()
                 }
             });
         },

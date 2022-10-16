@@ -5,7 +5,7 @@ import axios from 'axios';
 class AxiosConfig{
    constructor() {
     this.axiosService = axios.create({
-      baseURL: 'http://zhsdsb.top:8081'
+      baseURL: 'http://localhost:8083'
     })
     this.addInterceptor()
     this.axiosService.getRequest = (url) => this.axiosService.get(url)
@@ -35,7 +35,7 @@ class AxiosConfig{
         }
         return Promise.reject(response.data.message);
       }
-      return response
+      return response.data.data
     }, err=>{
       Message.error({message: err})
       return Promise.reject(err)
