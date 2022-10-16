@@ -53,7 +53,7 @@ import { Loading } from 'element-ui';
 
 Vue.use(codemirror)
 
-Vue.prototype.$axios = new AxiosConfig().axiosService
+Vue.prototype.$axios = AxiosConfig.axiosService
 Vue.prototype.$loading = Loading
 Vue.use(ElementUI);
 

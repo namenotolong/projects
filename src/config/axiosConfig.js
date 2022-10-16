@@ -42,4 +42,4 @@ class AxiosConfig{
     })
    }
 }
-export default AxiosConfig
+export default new AxiosConfig()
