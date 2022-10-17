@@ -24,8 +24,18 @@
                     </el-menu>
                 </el-aside>
                 <el-aside width="300px">
-                    <el-tree v-if="curDbTables.length > 0" @node-click="dbNodeClick" :props="props" :data="curDbTables">
-                    </el-tree>
+                    <el-table :data="curDbs" border style="width: 100%" @cell-click="dbClick">
+                        <el-table-column prop="database" label="库">
+                        </el-table-column>
+                    </el-table>
+                    <!-- <el-tree v-if="curDbTables.length > 0" @node-click="dbNodeClick" :props="props" :data="curDbTables">
+                    </el-tree> -->
+                </el-aside>
+                <el-aside>
+                    <el-table :data="curTables" border style="width: 100%" @cell-click="tableClick">
+                        <el-table-column prop="table" label="表">
+                        </el-table-column>
+                    </el-table>
                 </el-aside>
                 <el-container v-if="editableTabs.length > 0">
                     <el-header style="text-align: left; font-size: 12px;">
@@ -43,7 +53,7 @@
                     </el-main>
                     <el-footer>
                         <el-table :data="curClickTab.tableData" style="width: 100%">
-                            <el-table-column v-for="item in curClickTab.tableMeta" :key="item.name" :prop="item.name"
+                            <el-table-column v-for="item in curClickTab.tableMeta" :key="item.label" :prop="item.label"
                                 :label="item.label" width="180">
                             </el-table-column>
                         </el-table>
@@ -123,7 +133,7 @@
 import { codemirror } from 'vue-codemirror'
 
 import homeMenu from '../components/HomeMenu'
-import { listConns, deleteConn, updateConn, saveConn, listDbs, runSql } from '../api/database'
+import { listConns, deleteConn, updateConn, saveConn, listDbs, runSql, listTables } from '../api/database'
 export default {
     components: {
         codemirror, homeMenu
@@ -193,7 +203,7 @@ export default {
             curClickConnection: {},
             //当前连接的数据库
             curDbs: [],
-            curDbTables: [],
+            curTables: [],
             //当前sql内容
             sqlContent: '',
             //tabs map key: connId + '-' + dbName, value : tab
@@ -241,16 +251,42 @@ export default {
     },
 
     methods: {
+        //点击库
+        async dbClick(row) {
+            let tables = await listTables(row)
+            this.curTables = tables;
+        },
+        async tableClick(obj) {
+            //输入select预览
+            let sqlContent = `select * from ${obj.table} limit 10`;
+            let tabKey = obj.connId + "-" + obj.database;
+            let tab = this.edittableTabsMap.get(tabKey)
+            if (tab == null) {
+                let newTabName = ++this.tabIndex + '';
+                tab = {
+                    title: obj.connName + "-" + obj.database,
+                    name: newTabName,
+                    sqlContent: sqlContent,
+                    database: obj.database,
+                    connId: obj.connId,
+                    tableData: [],
+                    tableMeta: []
+                }
+                this.editableTabs.push(tab);
+                this.edittableTabsMap.set(tabKey, tab)
+                this.edittableTabsNameMap.set(newTabName, tab)
+                this.editableTabsValue = newTabName;
+            } else {
+                //切换tab
+                tab.sqlContent = sqlContent
+                this.editableTabsValue = tab.name;
+            }
+            this.curClickTab = tab;
+            this.doQuery(sqlContent, tab)
+        },
         handleOpen(key) {
             if (key == 1) {
-                const loading = this.$loading({
-                    lock: true,
-                    text: 'Loading',
-                    spinner: 'el-icon-loading',
-                    background: 'rgba(0, 0, 0, 0.7)'
-                });
                 this.queryConns()
-                loading.close();
             }
         },
         //运行sql
@@ -275,15 +311,8 @@ export default {
         },
         //删除连接
         async deletConn(id) {
-            const loading = this.$loading({
-                lock: true,
-                text: 'Loading',
-                spinner: 'el-icon-loading',
-                background: 'rgba(0, 0, 0, 0.7)'
-            });
             const res = await deleteConn(id)
             this.queryConns()
-            loading.close();
         },
         //编辑连接
         async editUpdateConn(data) {
@@ -300,18 +329,9 @@ export default {
         //new
         async refreshDb(id) {
             //获取连接数据库
-            const loading = this.$loading({
-                lock: true,
-                text: 'Loading',
-                spinner: 'el-icon-loading',
-                background: 'rgba(0, 0, 0, 0.7)'
-            });
-
             const rest = await this.listDbs(id)
 
-            this.curDbTables = rest
-
-            loading.close();
+            this.curDbs = rest
         },
         //移除tab
         removeTab(targetName) {
@@ -390,17 +410,10 @@ export default {
             this.doQuery(window.getSelection().toString(), this.curClickTab)
         },
         async doQuery(sql, tab) {
-            const loading = this.$loading({
-                lock: true,
-                text: 'Loading',
-                spinner: 'el-icon-loading',
-                background: 'rgba(0, 0, 0, 0.7)'
-            });
             const result = await this.executeSql(sql, tab.connId, tab.database)
             //query
             tab.tableMeta = result.tableMeta
             tab.tableData = result.tableData
-            loading.close();
         },
 
         //添加连接相关
