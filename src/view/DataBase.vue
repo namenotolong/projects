@@ -50,14 +50,16 @@
                             </el-tab-pane>
                             <codemirror v-model="curClickTab.sqlContent" :options="cmOptions" />
                         </el-tabs>
-                    </el-main>
-                    <el-footer>
-                        <el-table :data="curClickTab.tableData" style="width: 100%">
+                        <el-table :data="showTableData" style="width: 100%;" @header-click="celldblclick">
                             <el-table-column v-for="item in curClickTab.tableMeta" :key="item.label" :prop="item.label"
                                 :label="item.label" width="180">
                             </el-table-column>
                         </el-table>
-                    </el-footer>
+                        <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange"
+                            :current-page="currentPage" :page-sizes="[10, 20, 100, 200, 300, 400]" :page-size="pageSize"
+                            layout="total, sizes, prev, pager, next, jumper" :total="curClickTab.tableData.length">
+                        </el-pagination>
+                    </el-main>
                 </el-container>
             </el-container>
         </div>
@@ -133,7 +135,7 @@
 import { codemirror } from 'vue-codemirror'
 
 import homeMenu from '../components/HomeMenu'
-import { listConns, deleteConn, updateConn, saveConn, listDbs, runSql, listTables } from '../api/database'
+import { listConns, deleteConn, updateConn, saveConn, listDbs, runSql, listTables, listSupportTypes } from '../api/database'
 export default {
     components: {
         codemirror, homeMenu
@@ -152,6 +154,9 @@ export default {
     },
     data() {
         return {
+            showTableData: [],
+            pageSize: 10,
+            currentPage: 1,
             //menu
             isShowMenu: false,
             menuTop: 0,
@@ -196,8 +201,6 @@ export default {
             editableTabsValue: '',
             editableTabs: [],
             tabIndex: 0,
-
-
             //联动更新数据
             connections: [],
             curClickConnection: {},
@@ -247,10 +250,43 @@ export default {
     },
 
     mounted() {
-
+        this.listTypes();
     },
 
     methods: {
+        //复制
+        celldblclick(column, event) {
+            let save = function (e) {
+                e.clipboardData.setData('text/plain', column.label);
+                e.preventDefault();//阻止默认行为
+            }
+            document.addEventListener('copy', save);
+            document.execCommand("copy");
+            document.removeEventListener('copy', save);
+            this.$message({ message: '复制成功', type: 'success' }) //加提示
+        },
+
+        //
+        async listTypes() {
+            this.supportTypes = await listSupportTypes()
+        },
+        handleSizeChange(val) {
+            this.pageSize = val;
+            this.handleCurrentChange(1)
+        },
+        handleCurrentChange(val) {
+            this.currentPage = val;
+            if (!this.curClickTab || !this.curClickTab.tableData) {
+                this.showTableData = [];
+                return;
+            }
+            if (this.curClickTab.tableData.length < 1) {
+                this.showTableData = [];
+                return;
+            }
+            let skipSize = (val - 1) * this.pageSize;
+            this.showTableData = this.curClickTab.tableData.slice(skipSize, skipSize + this.pageSize)
+        },
         //点击库
         async dbClick(row) {
             let tables = await listTables(row)
@@ -414,6 +450,7 @@ export default {
             //query
             tab.tableMeta = result.tableMeta
             tab.tableData = result.tableData
+            this.handleCurrentChange(1)
         },
 
         //添加连接相关
