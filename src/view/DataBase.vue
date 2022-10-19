@@ -7,7 +7,7 @@
                 </el-button>
             </el-header>
             <el-container style=" border: 1px solid #eee">
-                <el-aside width="100px" style="background-color: rgb(238, 241, 246)">
+                <el-aside v-if="showLeft" width="6%" style="background-color: rgb(238, 241, 246)">
                     <el-menu style="background-color: rgb(238, 241, 246)" @open="handleOpen">
                         <el-submenu index="1">
                             <template slot="title">
@@ -23,7 +23,7 @@
                         </el-submenu>
                     </el-menu>
                 </el-aside>
-                <el-aside width="100px">
+                <el-aside v-if="showLeft" width="10%">
                     <el-table :data="curDbs" border style="width: 100%" @cell-click="dbClick">
                         <el-table-column prop="database" label="库">
                         </el-table-column>
@@ -31,7 +31,7 @@
                     <!-- <el-tree v-if="curDbTables.length > 0" @node-click="dbNodeClick" :props="props" :data="curDbTables">
                     </el-tree> -->
                 </el-aside>
-                <el-aside width="150px">
+                <el-aside v-if="showLeft" width="10%">
                     <el-table :data="curTables" border style="width: 100%" @cell-click="tableClick">
                         <el-table-column prop="table" label="表">
                         </el-table-column>
@@ -41,6 +41,8 @@
                     <el-header style="text-align: left; font-size: 12px;">
                         <el-button @click="runSql">运行</el-button>
                         <el-button @click="checkRunSql">选中运行</el-button>
+                        <el-button v-if="showLeft" @click="showLeft = false">收起侧边</el-button>
+                        <el-button v-if="!showLeft" @click="showLeft = true">打开侧边</el-button>
                     </el-header>
                     <el-main>
                         <el-tabs v-model="editableTabsValue" type="card" closable @tab-remove="removeTab"
@@ -48,15 +50,18 @@
                             <el-tab-pane :key="item.name" v-for="(item, index) in editableTabs" :label="item.title"
                                 :name="item.name">
                             </el-tab-pane>
-                            <codemirror v-model="curClickTab.sqlContent" :options="cmOptions" />
+                            <codemirror v-if="curClickTab != null" v-model="curClickTab.sqlContent"
+                                :options="cmOptions" />
                         </el-tabs>
-                        <el-table :data="showTableData" style="width: 100%;" @header-click="celldblclick">
+                        <el-table v-if="curClickTab != null" :data="curClickTab.showTableData" style="width: 100%;"
+                            @header-click="celldblclick">
                             <el-table-column v-for="item in curClickTab.tableMeta" :key="item.label" :prop="item.label"
                                 :label="item.label" width="180">
                             </el-table-column>
                         </el-table>
-                        <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange"
-                            :current-page="currentPage" :page-sizes="[10, 20, 100, 200, 300, 400]" :page-size="pageSize"
+                        <el-pagination v-if="curClickTab != null" @size-change="handleSizeChange"
+                            @current-change="handleCurrentChange" :current-page="curClickTab.currentPage"
+                            :page-sizes="[10, 20, 100, 200, 300, 400]" :page-size="curClickTab.pageSize"
                             layout="total, sizes, prev, pager, next, jumper" :total="curClickTab.tableData.length">
                         </el-pagination>
                     </el-main>
@@ -154,9 +159,7 @@ export default {
     },
     data() {
         return {
-            showTableData: [],
-            pageSize: 10,
-            currentPage: 1,
+            showLeft: true,
             //menu
             isShowMenu: false,
             menuTop: 0,
@@ -212,7 +215,7 @@ export default {
             //tabs map key: connId + '-' + dbName, value : tab
             edittableTabsMap: new Map(),
             edittableTabsNameMap: new Map(),
-            curClickTab: {},
+            curClickTab: null,
 
             //result
 
@@ -271,11 +274,11 @@ export default {
             this.supportTypes = await listSupportTypes()
         },
         handleSizeChange(val) {
-            this.pageSize = val;
+            this.curClickTab.pageSize = val;
             this.handleCurrentChange(1)
         },
         handleCurrentChange(val) {
-            this.currentPage = val;
+            this.curClickTab.currentPage = val;
             if (!this.curClickTab || !this.curClickTab.tableData) {
                 this.showTableData = [];
                 return;
@@ -284,8 +287,9 @@ export default {
                 this.showTableData = [];
                 return;
             }
-            let skipSize = (val - 1) * this.pageSize;
-            this.showTableData = this.curClickTab.tableData.slice(skipSize, skipSize + this.pageSize)
+            let skipSize = (val - 1) * this.curClickTab.pageSize;
+
+            this.curClickTab.showTableData = this.curClickTab.tableData.slice(skipSize, skipSize + this.curClickTab.pageSize)
         },
         //点击库
         async dbClick(row) {
@@ -295,18 +299,21 @@ export default {
         async tableClick(obj) {
             //输入select预览
             let sqlContent = `select * from ${obj.table} limit 10`;
-            let tabKey = obj.connId + "-" + obj.database;
+            let newTabName = ++this.tabIndex + '';
+            let tabKey = obj.connId + "-" + obj.database + '-' + obj.table;
             let tab = this.edittableTabsMap.get(tabKey)
             if (tab == null) {
-                let newTabName = ++this.tabIndex + '';
                 tab = {
-                    title: obj.connName + "-" + obj.database,
+                    title: obj.database + "-" + obj.table,
                     name: newTabName,
                     sqlContent: sqlContent,
                     database: obj.database,
                     connId: obj.connId,
                     tableData: [],
-                    tableMeta: []
+                    tableMeta: [],
+                    pageSize: 10,
+                    currentPage: 1,
+                    showTableData: []
                 }
                 this.editableTabs.push(tab);
                 this.edittableTabsMap.set(tabKey, tab)
@@ -404,40 +411,7 @@ export default {
             let tabObj = this.edittableTabsNameMap.get(tab.name)
             if (tabObj !== null) {
                 this.curClickTab = tabObj;
-                this.handleCurrentChange(1)
-            }
-        },
-        //节点点击
-        dbNodeClick(obj) {
-            if (obj.leaf === true) {
-                //输入select预览
-                let sqlContent = `select * from ${obj.name} limit 10`;
-
-                let tabKey = obj.connId + "-" + obj.database;
-                let tab = this.edittableTabsMap.get(tabKey)
-                if (tab == null) {
-                    let newTabName = ++this.tabIndex + '';
-                    tab = {
-                        title: obj.connName + "-" + obj.database,
-                        name: newTabName,
-                        sqlContent: sqlContent,
-                        database: obj.database,
-                        connId: obj.connId,
-                        tableData: [],
-                        tableMeta: []
-                    }
-                    this.editableTabs.push(tab);
-                    this.edittableTabsMap.set(tabKey, tab)
-                    this.edittableTabsNameMap.set(newTabName, tab)
-                    this.editableTabsValue = newTabName;
-                } else {
-                    //切换tab
-                    tab.sqlContent = sqlContent
-                    this.editableTabsValue = tab.name;
-                }
-                this.curClickTab = tab;
-                this.doQuery(sqlContent, tab)
-                return;
+                //this.handleCurrentChange(1)
             }
         },
         //运行sql

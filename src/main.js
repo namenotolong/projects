@@ -57,26 +57,30 @@ Vue.prototype.$axios = AxiosConfig.axiosService
 Vue.prototype.$loading = Loading
 Vue.use(ElementUI);
 
-// 路由拦截器
+//路由拦截器
 // router.beforeEach((to, from, next) => {
 //   if (to.matched.length != 0) {
-//     if (to.meta.requiredAuth) { // 判断该路由是否需要登录权限
-//       if (Boolean(localStorage.getItem("token"))) { // 通过vuex state获取当前的user是否存在
-//         next();
-//       } else {
-//         ElementUI.Message.error('您还未登陆，您还未登陆请先登录')
-//         next({
-//           path: '/'
-//         })
-//       }
-//     } else {
-//       next();
+//     // if (to.meta) {
+//     //   if (to.meta.allowBack === false) {
+//     //     alert(1)
+//     //   }
+//     // } else {
+//     //   next()
+//     // }
+//     if (to.path === '/') {
+//       console.log(1)
+//       next()
+//     } else  {
+//       alert('no')
 //     }
+//     console.log(from)
+//     console.log(to)
 //   } else {
 //     next({
 //       path: '/',
 //     })
 //   }
+//   console.log(11111111111111111)
 // })
 /* eslint-disable no-new */
 new Vue({

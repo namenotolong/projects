@@ -14,7 +14,8 @@ export default new Router({
       name: 'database',
       component: Database,
       meta: {
-        requiredAuth: false
+        requiredAuth: false,
+        allowBack: false
       }
     }
   ]
