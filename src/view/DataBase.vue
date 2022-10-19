@@ -7,7 +7,7 @@
                 </el-button>
             </el-header>
             <el-container style=" border: 1px solid #eee">
-                <el-aside width="200px" style="background-color: rgb(238, 241, 246)">
+                <el-aside width="100px" style="background-color: rgb(238, 241, 246)">
                     <el-menu style="background-color: rgb(238, 241, 246)" @open="handleOpen">
                         <el-submenu index="1">
                             <template slot="title">
@@ -23,7 +23,7 @@
                         </el-submenu>
                     </el-menu>
                 </el-aside>
-                <el-aside width="300px">
+                <el-aside width="100px">
                     <el-table :data="curDbs" border style="width: 100%" @cell-click="dbClick">
                         <el-table-column prop="database" label="库">
                         </el-table-column>
@@ -31,7 +31,7 @@
                     <!-- <el-tree v-if="curDbTables.length > 0" @node-click="dbNodeClick" :props="props" :data="curDbTables">
                     </el-tree> -->
                 </el-aside>
-                <el-aside>
+                <el-aside width="150px">
                     <el-table :data="curTables" border style="width: 100%" @cell-click="tableClick">
                         <el-table-column prop="table" label="表">
                         </el-table-column>
@@ -368,6 +368,7 @@ export default {
             const rest = await this.listDbs(id)
 
             this.curDbs = rest
+            this.curTables = [];
         },
         //移除tab
         removeTab(targetName) {
@@ -403,6 +404,7 @@ export default {
             let tabObj = this.edittableTabsNameMap.get(tab.name)
             if (tabObj !== null) {
                 this.curClickTab = tabObj;
+                this.handleCurrentChange(1)
             }
         },
         //节点点击
