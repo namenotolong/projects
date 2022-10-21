@@ -31,6 +31,10 @@ export const listTables = params => {
     return http.get('/database/list-tables/' + params.connId + '/' + params.database)
 }
 
+export const tableDetail = params => {
+    return http.get('/database/detail-table/' + params.connId + '/' + params.database + '/' + params.table)
+}
+
 export const listSupportTypes = () => {
     return http.get('/database/list-types')
 }

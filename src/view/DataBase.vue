@@ -6,69 +6,99 @@
                     新建查询
                 </el-button>
             </el-header>
-            <el-container style=" border: 1px solid #eee">
-                <el-aside v-if="showLeft" width="6%" style="background-color: rgb(238, 241, 246)">
-                    <el-menu style="background-color: rgb(238, 241, 246)" @open="handleOpen">
-                        <el-submenu index="1">
-                            <template slot="title">
-                                <span>我的连接</span>
-                            </template>
-                            <div v-for="data in connections" :key="data.id">
-                                <div @contextmenu.prevent.stop="showMenu(data)">
-                                    <el-menu-item :index="data.name" @click="refreshDb(data.id)">
-                                        {{data.name}}
-                                    </el-menu-item>
+            <div>
+                <el-container style=" border: 1px solid #eee">
+                    <el-aside v-if="showLeft" width="10%" style="background-color: rgb(238, 241, 246)">
+
+                        <el-menu style="background-color: rgb(238, 241, 246)" @open="handleOpen">
+                            <el-submenu index="1">
+                                <template slot="title">
+                                    <span>我的连接</span>
+                                </template>
+                                <div v-for="data in connections" :key="data.id">
+                                    <el-dropdown style="width: 100%;" @command="handleCommand($event, data)" placement="bottom">
+                                        <el-menu-item :index="data.name" @click="refreshDb(data.id)">
+                                            {{data.name}}
+                                        </el-menu-item>
+                                        <el-dropdown-menu slot="dropdown">
+                                            <el-dropdown-item command="edit">编辑</el-dropdown-item>
+                                            <el-dropdown-item command="delete">删除</el-dropdown-item>
+                                        </el-dropdown-menu>
+                                    </el-dropdown>
                                 </div>
-                            </div>
-                        </el-submenu>
-                    </el-menu>
-                </el-aside>
-                <el-aside v-if="showLeft" width="10%">
-                    <el-table :data="curDbs" border style="width: 100%" @cell-click="dbClick">
-                        <el-table-column prop="database" label="库">
-                        </el-table-column>
-                    </el-table>
-                    <!-- <el-tree v-if="curDbTables.length > 0" @node-click="dbNodeClick" :props="props" :data="curDbTables">
-                    </el-tree> -->
-                </el-aside>
-                <el-aside v-if="showLeft" width="10%">
-                    <el-table :data="curTables" border style="width: 100%" @cell-click="tableClick">
-                        <el-table-column prop="table" label="表">
-                        </el-table-column>
-                    </el-table>
-                </el-aside>
-                <el-container v-if="editableTabs.length > 0">
-                    <el-header style="text-align: left; font-size: 12px;">
-                        <el-button @click="runSql">运行</el-button>
-                        <el-button @click="checkRunSql">选中运行</el-button>
-                        <el-button v-if="showLeft" @click="showLeft = false">收起侧边</el-button>
-                        <el-button v-if="!showLeft" @click="showLeft = true">打开侧边</el-button>
-                    </el-header>
-                    <el-main>
-                        <el-tabs v-model="editableTabsValue" type="card" closable @tab-remove="removeTab"
-                            @tab-click="clickTab">
-                            <el-tab-pane :key="item.name" v-for="(item, index) in editableTabs" :label="item.title"
-                                :name="item.name">
-                            </el-tab-pane>
-                            <codemirror v-if="curClickTab != null" v-model="curClickTab.sqlContent"
-                                :options="cmOptions" />
-                        </el-tabs>
-                        <el-table v-if="curClickTab != null" :data="curClickTab.showTableData" style="width: 100%;"
-                            @header-click="celldblclick">
-                            <el-table-column v-for="item in curClickTab.tableMeta" :key="item.label" :prop="item.label"
-                                :label="item.label" width="180">
+                            </el-submenu>
+                        </el-menu>
+                    </el-aside>
+                    <el-aside v-if="showLeft" width="10%">
+                        <el-table :data="curDbs" border style="width: 100%" @cell-click="dbClick">
+                            <el-table-column prop="database" label="库">
                             </el-table-column>
                         </el-table>
-                        <el-pagination v-if="curClickTab != null" @size-change="handleSizeChange"
-                            @current-change="handleCurrentChange" :current-page="curClickTab.currentPage"
-                            :page-sizes="[10, 20, 100, 200, 300, 400]" :page-size="curClickTab.pageSize"
-                            layout="total, sizes, prev, pager, next, jumper" :total="curClickTab.tableData.length">
-                        </el-pagination>
-                    </el-main>
+                        <!-- <el-tree v-if="curDbTables.length > 0" @node-click="dbNodeClick" :props="props" :data="curDbTables">
+                    </el-tree> -->
+                    </el-aside>
+                    <el-aside v-if="showLeft" width="15%">
+                        <el-table :data="curTables" border style="width: 100%" @cell-click="tableClick">
+                            <el-table-column label="表">
+                                <template slot-scope="scope">
+                                    <el-dropdown style="width: 100%;" @command="handleTableCommand($event, scope.row)" placement="bottom-start">
+                                        <span style="width: 100%;">{{ scope.row.table }}</span>
+                                        <el-dropdown-menu slot="dropdown">
+                                            <el-dropdown-item command="desc">查看结构</el-dropdown-item>
+                                        </el-dropdown-menu>
+                                    </el-dropdown>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </el-aside>
+                    <el-container v-if="editableTabs.length > 0">
+                        <el-header style="text-align: left; font-size: 12px;">
+                            <el-button @click="runSql">运行</el-button>
+                            <el-button @click="checkRunSql">选中运行</el-button>
+                            <el-button v-if="showLeft" @click="showLeft = false">收起侧边</el-button>
+                            <el-button v-if="!showLeft" @click="showLeft = true">打开侧边</el-button>
+                        </el-header>
+                        <el-main>
+                            <el-tabs v-model="editableTabsValue" type="card" closable @tab-remove="removeTab"
+                                @tab-click="clickTab">
+                                <el-tab-pane :key="item.name" v-for="(item, index) in editableTabs" :label="item.title"
+                                    :name="item.name">
+                                </el-tab-pane>
+                                <codemirror v-if="curClickTab != null" v-model="curClickTab.sqlContent"
+                                    :options="cmOptions" />
+                            </el-tabs>
+                            <div v-if="curClickTab != null 
+                          && curClickTab.success == true
+                           && curClickTab.showTableData != null
+                           && curClickTab.tableMeta
+                            && curClickTab.tableMeta.length > 0">
+                                <el-table v-if="curClickTab != null 
+                              && curClickTab.success == true
+                               && curClickTab.showTableData != null
+                               && curClickTab.tableMeta
+                                && curClickTab.tableMeta.length > 0" :data="curClickTab.showTableData"
+                                    style="width: 100%;" @header-click="celldblclick">
+                                    <el-table-column v-for="item in curClickTab.tableMeta" :key="item.label"
+                                        :prop="item.label" :label="item.label" width="180">
+                                    </el-table-column>
+                                </el-table>
+                                <el-pagination v-if="curClickTab != null" @size-change="handleSizeChange"
+                                    @current-change="handleCurrentChange" :current-page="curClickTab.currentPage"
+                                    :page-sizes="[10, 20, 100, 200, 300, 400]" :page-size="curClickTab.pageSize"
+                                    layout="total, sizes, prev, pager, next, jumper"
+                                    :total="curClickTab.tableData.length">
+                                </el-pagination>
+                            </div>
+                            <div v-else>
+                                <span v-if="curClickTab && curClickTab.success == false">{{curClickTab.errorMsg}}</span>
+                                <span v-else>查询中……</span>
+                            </div>
+                        </el-main>
+                    </el-container>
                 </el-container>
-            </el-container>
-        </div>
+            </div>
 
+        </div>
 
         <div>
             <el-dialog title="添加连接" :visible.sync="addConnDialog">
@@ -128,10 +158,41 @@
             </el-dialog>
         </div>
 
-        <div class="menu" v-if="isShowMenu" :style="{'left': menuLeft + 'px', 'top': menuTop + 'px'}">
-            <div style="width: 10%">
-                <home-menu :conversation="curClickConnection" @hiddenMenu="hiddenMenu" />
-            </div>
+        <div>
+            <el-dialog title="表结构" :visible.sync="tableDetailDiaglog">
+                <div v-if="tableDetail && tableDetail.columnList">
+                    <h3>字段结构</h3>
+                    <el-table :data="tableDetail.columnList" style="width: 100%">
+                        <el-table-column prop="name" label="名称">
+                        </el-table-column>
+                        <el-table-column prop="type" label="类型">
+                        </el-table-column>
+                        <el-table-column prop="autoIncrement" label="自增">
+                        </el-table-column>
+                        <el-table-column prop="size" label="长度">
+                        </el-table-column>
+                        <el-table-column prop="digits" label="精度">
+                        </el-table-column>
+                        <el-table-column prop="nullable" label="空值">
+                        </el-table-column>
+                        <el-table-column prop="defaultValue" label="默认值">
+                        </el-table-column>
+                        <el-table-column prop="remarks" label="备注">
+                        </el-table-column>
+                    </el-table>
+                </div>
+                <div v-if="tableDetail && tableDetail.indexList">
+                    <h3>索引</h3>
+                    <el-table :data="tableDetail.indexList" style="width: 100%">
+                        <el-table-column prop="name" label="名称">
+                        </el-table-column>
+                        <el-table-column prop="fields" label="字段列表">
+                        </el-table-column>
+                        <el-table-column prop="unique" label="唯一">
+                        </el-table-column>
+                    </el-table>
+                </div>
+            </el-dialog>
         </div>
     </div>
 </template>
@@ -139,31 +200,21 @@
 <script>
 import { codemirror } from 'vue-codemirror'
 
-import homeMenu from '../components/HomeMenu'
-import { listConns, deleteConn, updateConn, saveConn, listDbs, runSql, listTables, listSupportTypes } from '../api/database'
+import { listConns, deleteConn, updateConn, saveConn, listDbs, runSql, listTables, listSupportTypes, tableDetail } from '../api/database'
 export default {
     components: {
-        codemirror, homeMenu
+        codemirror
     },
     props: ['conversation'],
     created() {
-        document.addEventListener('click', () => {
-            this.isShowMenu = false
-        })
-        document.addEventListener('mousedown', (e) => {
-            const { button } = e
-            if (button === 2) {
-                this.isShowMenu = false
-            }
-        })
+
     },
     data() {
         return {
+            tableDetailDiaglog: false,
+            tableDetail: null,
             showLeft: true,
             //menu
-            isShowMenu: false,
-            menuTop: 0,
-            menuLeft: 0,
             props: {
                 label: 'name',
                 children: 'tables',
@@ -269,6 +320,32 @@ export default {
     },
 
     methods: {
+        //table menu
+        async handleTableCommand(command, data) {
+            if (command === 'desc') {
+                const result = await tableDetail(data)
+                if (result.columnList && result.columnList.length > 0) {
+                    this.tableDetailDiaglog = true;
+                    this.tableDetail = result;
+                } else {
+                    this.$message({ message: '表结构为空', type: 'error' })
+                }
+
+            }
+        },
+        //munu
+        handleCommand(command, data) {
+            if (command === 'edit') {
+                this.editConnForm = data;
+                this.editConnDialog = true;
+            } else if (command === 'delete') {
+                this.$confirm('确认删除吗？')
+                    .then(_ => {
+                        this.deletConn(data.id)
+                    })
+                    .catch(_ => { });
+            }
+        },
         //复制
         celldblclick(column, event) {
             let save = function (e) {
@@ -290,13 +367,17 @@ export default {
             this.handleCurrentChange(1)
         },
         handleCurrentChange(val) {
+            if (this.curClickTab.success == false) {
+                this.curClickTab.showTableData = [];
+                return;
+            }
             this.curClickTab.currentPage = val;
             if (!this.curClickTab || !this.curClickTab.tableData) {
-                this.showTableData = [];
+                this.curClickTab.showTableData = [];
                 return;
             }
             if (this.curClickTab.tableData.length < 1) {
-                this.showTableData = [];
+                this.curClickTab.showTableData = [];
                 return;
             }
             let skipSize = (val - 1) * this.curClickTab.pageSize;
@@ -310,7 +391,7 @@ export default {
         },
         async tableClick(obj) {
             //输入select预览
-            let sqlContent = `select * from ${obj.table} limit 10`;
+            let sqlContent = `select * from ${obj.table} limit 100`;
             let newTabName = ++this.tabIndex + '';
             let tabKey = obj.connId + "-" + obj.database + '-' + obj.table;
             let tab = this.edittableTabsMap.get(tabKey)
@@ -325,7 +406,9 @@ export default {
                     tableMeta: [],
                     pageSize: 10,
                     currentPage: 1,
-                    showTableData: []
+                    showTableData: [],
+                    success: false,
+                    errorMsg: '查询中'
                 }
                 this.editableTabs.push(tab);
                 this.edittableTabsMap.set(tabKey, tab)
@@ -438,6 +521,9 @@ export default {
             //query
             tab.tableMeta = result.tableMeta
             tab.tableData = result.tableData
+            tab.success = result.success;
+            tab.errorMsg = result.errorMsg;
+            tab.sqlContent = result.executeSql;
             this.handleCurrentChange(1)
         },
 
@@ -453,23 +539,6 @@ export default {
             this.$refs[formName].resetFields();
         },
 
-        //menu
-        showMenu(data) {
-            this.isShowMenu = true
-            this.menuLeft = data.pageX
-            this.menuTop = data.pageY
-            this.curClickConnection = data
-        },
-        hiddenMenu(data, op) {
-            if (op === 'edit') {
-                this.editConnForm = data;
-                this.editConnDialog = true;
-            } else if (op === 'remove') {
-                this.deletConn(data.id)
-            }
-
-            this.isShowMenu = false
-        },
         submitUpdateForm(formName) {
             this.$refs[formName].validate((valid) => {
                 if (valid) {
