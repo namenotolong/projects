@@ -16,7 +16,8 @@
                                     <span>我的连接</span>
                                 </template>
                                 <div v-for="data in connections" :key="data.id">
-                                    <el-dropdown style="width: 100%;" @command="handleCommand($event, data)" placement="bottom">
+                                    <el-dropdown style="width: 100%;" @command="handleCommand($event, data)"
+                                        placement="bottom">
                                         <el-menu-item :index="data.name" @click="refreshDb(data.id)">
                                             {{data.name}}
                                         </el-menu-item>
@@ -41,7 +42,8 @@
                         <el-table :data="curTables" border style="width: 100%" @cell-click="tableClick">
                             <el-table-column label="表">
                                 <template slot-scope="scope">
-                                    <el-dropdown style="width: 100%;" @command="handleTableCommand($event, scope.row)" placement="bottom-start">
+                                    <el-dropdown style="width: 100%;" @command="handleTableCommand($event, scope.row)"
+                                        placement="bottom-start">
                                         <span style="width: 100%;">{{ scope.row.table }}</span>
                                         <el-dropdown-menu slot="dropdown">
                                             <el-dropdown-item command="desc">查看结构</el-dropdown-item>
@@ -167,13 +169,13 @@
                         </el-table-column>
                         <el-table-column prop="type" label="类型">
                         </el-table-column>
-                        <el-table-column prop="autoIncrement" label="自增">
+                        <el-table-column prop="autoIncrement" label="自增" :formatter="formatBoolean">
                         </el-table-column>
                         <el-table-column prop="size" label="长度">
                         </el-table-column>
                         <el-table-column prop="digits" label="精度">
                         </el-table-column>
-                        <el-table-column prop="nullable" label="空值">
+                        <el-table-column prop="nullable" label="空值" :formatter="formatBoolean">
                         </el-table-column>
                         <el-table-column prop="defaultValue" label="默认值">
                         </el-table-column>
@@ -320,6 +322,15 @@ export default {
     },
 
     methods: {
+        formatBoolean(row, column, cellValue) {
+            var ret = ''  //你想在页面展示的值
+            if (cellValue) {
+                ret = "是"  //根据自己的需求设定
+            } else {
+                ret = "否"
+            }
+            return ret;
+        },
         //table menu
         async handleTableCommand(command, data) {
             if (command === 'desc') {
